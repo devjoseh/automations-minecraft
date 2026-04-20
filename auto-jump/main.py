@@ -152,35 +152,65 @@ def cmd_test_ocr():
         print("\nOCR falhou. Recalibre com: python calibrate_ocr.py")
 
 
+def escolher_modo() -> bool:
+    """Retorna True se o usuário quer OCR ativo, False para modo simples."""
+    if "--sem-ocr" in sys.argv:
+        return False
+    if "--com-ocr" in sys.argv:
+        return True
+
+    print("=" * 50)
+    print("  Escolha o modo de execução:")
+    print("=" * 50)
+    print("  1 → Espaço + Click (simples, sem OCR)")
+    print("  2 → Espaço + Click + OCR (rankup automático)")
+    print()
+    while True:
+        escolha = input("  Digite 1 ou 2: ").strip()
+        if escolha == "1":
+            return False
+        if escolha == "2":
+            return True
+        print("  Opção inválida. Digite 1 ou 2.")
+
+
 if __name__ == "__main__":
     if "--test-ocr" in sys.argv:
         cmd_test_ocr()
         sys.exit(0)
 
+    usar_ocr = escolher_modo()
+
     thread_macro = threading.Thread(target=executar_macro, daemon=True)
     thread_macro.start()
 
-    thread_ocr = threading.Thread(target=loop_ocr, daemon=True)
-    thread_ocr.start()
+    if usar_ocr:
+        thread_ocr = threading.Thread(target=loop_ocr, daemon=True)
+        thread_ocr.start()
 
+    print()
     print("=" * 50)
-    print("  Auto-Jump + RankUp Automático")
+    if usar_ocr:
+        print("  Auto-Jump + RankUp Automático  [OCR ATIVO]")
+    else:
+        print("  Auto-Jump  [modo simples, sem OCR]")
     print("=" * 50)
     print("  F        → Ligar/desligar farm")
     print("  Ctrl+C   → Fechar o programa")
     print()
 
-    if not OCR_CONFIG_FILE.exists():
-        print("[AVISO] OCR não calibrado — rankup automático inativo.")
-        print("        Execute: python calibrate_ocr.py")
-    else:
-        cfg = json.loads(OCR_CONFIG_FILE.read_text(encoding="utf-8"))
-        if cfg.get("nivel_region") and cfg.get("rank_region"):
-            print("[OCR] Calibração encontrada — rankup automático ATIVO.")
-            print(f"      Verificação a cada {OCR_INTERVAL:.0f}s.")
+    if usar_ocr:
+        if not OCR_CONFIG_FILE.exists():
+            print("[AVISO] OCR não calibrado — rankup automático inativo.")
+            print("        Execute: python calibrate_ocr.py")
         else:
-            print("[AVISO] Calibração incompleta. Execute: python calibrate_ocr.py")
-    print()
+            cfg = json.loads(OCR_CONFIG_FILE.read_text(encoding="utf-8"))
+            if cfg.get("nivel_region") and cfg.get("rank_region"):
+                print("[OCR] Calibração encontrada — rankup automático ATIVO.")
+                print(f"      Verificação a cada {OCR_INTERVAL:.0f}s.")
+            else:
+                print("[AVISO] Calibração incompleta. Execute: python calibrate_ocr.py")
+        print()
 
     escutador = Listener(on_press=ao_pressionar)
     escutador.daemon = True
