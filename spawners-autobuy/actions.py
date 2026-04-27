@@ -3,6 +3,11 @@ import time
 import pyautogui
 from pynput.keyboard import Controller as KeyboardController, Key
 
+# Cached screen center — usado para mover o mouse para o mundo antes de right-click
+_SCREEN_W, _SCREEN_H = pyautogui.size()
+_CENTER_X = _SCREEN_W // 2
+_CENTER_Y = _SCREEN_H // 2
+
 from config import (
     ACTION_DELAY_MS,
     HOTBAR_SLOTS,
@@ -92,6 +97,10 @@ def buy_spawners(spawner_pos: tuple, running=None):
     Move mouse to spawner_pos and press Q TOTAL_Q_PRESSES times.
     Uses perf_counter to compensate timing drift.
     'running' is an optional threading.Event; if cleared, stop early.
+
+    Ao terminar, move o mouse para o centro da tela ENQUANTO o shop ainda está
+    aberto (cursor livre), evitando que o Minecraft interprete o delta como
+    rotação de câmera ao recapturar o cursor no close_menu() seguinte.
     """
     pyautogui.moveTo(*_jitter_pos(*spawner_pos))
     _jitter_ms(MOUSE_MOVE_DELAY_MS)
@@ -110,6 +119,12 @@ def buy_spawners(spawner_pos: tuple, running=None):
         if remaining > 0:
             time.sleep(remaining)
 
+    # Move para o centro enquanto o shop ainda está aberto (cursor liberado pelo GUI).
+    # Quando close_menu() fechar o shop, o Minecraft vai recapturar o cursor já
+    # centrado → nenhum delta → nenhuma rotação de câmera.
+    pyautogui.moveTo(_CENTER_X, _CENTER_Y)
+    _jitter_ms(MOUSE_MOVE_DELAY_MS)
+
 
 # ---------------------------------------------------------------------------
 # Placing spawners from hotbar
@@ -127,6 +142,10 @@ def place_all_hotbar():
 
     Pass 2 — shift segurado: passa slot 1→9 com shift+direito para descartar
     os spawners restantes em pilha.
+
+    IMPORTANTE: NÃO faz pyautogui.moveTo aqui. O mouse já é centrado dentro
+    dos GUIs anteriores (buy_spawners / refill_hotbar_from_row) antes de fechar,
+    para que o Minecraft não interprete nenhum delta como rotação de câmera.
     """
     # Pass 1: right-click simples em cada slot (descartar itens que não respondem ao shift+direito)
     if _pass1_enabled:
@@ -165,6 +184,10 @@ def refill_hotbar_from_row(row_index: int, inventory_slots: list):
     Shift+click every slot in 'row_index' of the inventory to move items
     to the hotbar. Holds shift once for all 9 slots.
     row_index: 0 = top row, 1 = middle, 2 = bottom
+
+    Ao terminar, move o mouse para o centro da tela ENQUANTO o inventário ainda
+    está aberto (cursor livre). Quando close_menu() fechar o inventário, o
+    Minecraft recaptura o cursor já centrado → nenhum delta → câmera estável.
     """
     pyautogui.keyDown('shift')
     try:
@@ -176,3 +199,8 @@ def refill_hotbar_from_row(row_index: int, inventory_slots: list):
             _jitter_ms(INVENTORY_CLICK_DELAY_MS)
     finally:
         pyautogui.keyUp('shift')
+
+    # Centraliza o mouse ANTES de fechar o inventário (cursor ainda livre).
+    # Evita que o Minecraft gire a câmera ao recapturar o cursor.
+    pyautogui.moveTo(_CENTER_X, _CENTER_Y)
+    _jitter_ms(MOUSE_MOVE_DELAY_MS)
