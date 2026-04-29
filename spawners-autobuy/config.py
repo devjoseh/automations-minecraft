@@ -4,7 +4,7 @@ MOUSE_MOVE_DELAY_MS = 80      # Delay after moving mouse before acting
 ACTION_DELAY_MS = 100         # Delay between major actions (open menu, etc.)
 
 # Inventory
-TOTAL_Q_PRESSES = 2260        # 35 slots × 64 + 1 slot with 1 unit
+TOTAL_Q_PRESSES = 576         # 9 hotbar slots × 64 items each (merged into one before placing)
 HOTBAR_SLOTS = 9              # Slots 1–9
 INVENTORY_ROWS = 3            # Inventory rows above hotbar
 SLOTS_PER_ROW = 9             # Columns per row
@@ -21,7 +21,6 @@ SAFETY_MONITOR_ENABLED = True       # Se False, desativa completamente o monitor
 # Região da tela onde aparecem as coordenadas XYZ no F3 (left, top, width, height).
 # O XYZ fica na 2ª linha do painel F3 (lado esquerdo). Ajuste para sua resolução/UI scale.
 SAFETY_XYZ_REGION = (1, 213, 554, 37)        # Pixels (left, top, width, height) — 1920x1080 125% DPI
-PLACE_PASS1_ENABLED = True      # Se True, faz right-click simples (sem shift) nos slots 1–9 antes do shift+right-click
 PLACE_SLOT_DELAY_MS = 60        # Delay entre troca de slot e right-click ao colocar no chão
 INVENTORY_MOVE_DELAY_MS = 60    # Delay após mover mouse para slot do inventário
 INVENTORY_CLICK_DELAY_MS = 40   # Delay entre shift-clicks no inventário

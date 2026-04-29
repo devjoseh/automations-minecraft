@@ -10,7 +10,6 @@ _CENTER_Y = _SCREEN_H // 2
 
 from config import (
     ACTION_DELAY_MS,
-    HOTBAR_SLOTS,
     INVENTORY_CLICK_DELAY_MS,
     INVENTORY_MOVE_DELAY_MS,
     KEY_CLOSE_MENU,
@@ -18,20 +17,10 @@ from config import (
     KEY_OPEN_CHAT,
     KEY_SPAWNERS_CMD,
     MOUSE_MOVE_DELAY_MS,
-    PLACE_PASS1_ENABLED,
     PLACE_SLOT_DELAY_MS,
     Q_PRESS_INTERVAL_MS,
     TOTAL_Q_PRESSES,
 )
-
-_pass1_enabled: bool = PLACE_PASS1_ENABLED
-
-
-def toggle_pass1() -> bool:
-    """Liga/desliga o Pass 1 (right-click sem shift). Retorna o novo estado."""
-    global _pass1_enabled
-    _pass1_enabled = not _pass1_enabled
-    return _pass1_enabled
 
 _pynput_kb = KeyboardController()
 
@@ -135,43 +124,28 @@ _HOTBAR_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 
 def place_all_hotbar():
     """
-    Place spawners from every hotbar slot (1–9) onto the ground.
+    Seleciona o slot 1, shift+right-click para juntar todos os spawners do
+    inventario em um unico stack, depois right-click para colocar no chao.
 
-    Pass 1 — right-click only (sem shift): descarta itens como corante azul que
-    não respondem ao shift+direito (chaves e poções também são consumidas aqui).
-
-    Pass 2 — shift segurado: passa slot 1→9 com shift+direito para descartar
-    os spawners restantes em pilha.
-
-    IMPORTANTE: NÃO faz pyautogui.moveTo aqui. O mouse já é centrado dentro
-    dos GUIs anteriores (buy_spawners / refill_hotbar_from_row) antes de fechar,
-    para que o Minecraft não interprete nenhum delta como rotação de câmera.
+    IMPORTANTE: NAO faz pyautogui.moveTo aqui. O mouse ja e centrado dentro
+    dos GUIs anteriores (buy_spawners) antes de fechar, para que o Minecraft
+    nao interprete nenhum delta como rotacao de camera.
     """
-    # Pass 1: right-click simples em cada slot (descartar itens que não respondem ao shift+direito)
-    if _pass1_enabled:
-        for slot in range(1, HOTBAR_SLOTS + 1):
-            _pynput_kb.press(_HOTBAR_KEYS[slot - 1])
-            _pynput_kb.release(_HOTBAR_KEYS[slot - 1])
-            _jitter_ms(PLACE_SLOT_DELAY_MS)
-            pyautogui.rightClick()
-            _jitter_ms(PLACE_SLOT_DELAY_MS)
+    # Seleciona slot 1
+    _pynput_kb.press(_HOTBAR_KEYS[0])
+    _pynput_kb.release(_HOTBAR_KEYS[0])
+    _jitter_ms(PLACE_SLOT_DELAY_MS)
 
-        # Volta para slot 1
-        _pynput_kb.press(_HOTBAR_KEYS[0])
-        _pynput_kb.release(_HOTBAR_KEYS[0])
-        _jitter_ms(PLACE_SLOT_DELAY_MS)
-
-    # Pass 2: shift segurado, right-click em cada slot
+    # Shift + right-click: junta todos os spawners do inventario no slot 1
     pyautogui.keyDown('shift')
     try:
-        for slot in range(1, HOTBAR_SLOTS + 1):
-            _pynput_kb.press(_HOTBAR_KEYS[slot - 1])
-            _pynput_kb.release(_HOTBAR_KEYS[slot - 1])
-            _jitter_ms(PLACE_SLOT_DELAY_MS)
-            pyautogui.rightClick()
-            _jitter_ms(PLACE_SLOT_DELAY_MS)
+        pyautogui.rightClick()
     finally:
         pyautogui.keyUp('shift')
+    _jitter_ms(ACTION_DELAY_MS)
+
+    # Right-click: coloca o spawner resultante no chao
+    pyautogui.rightClick()
     _jitter_ms(ACTION_DELAY_MS)
 
 
