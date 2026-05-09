@@ -49,9 +49,13 @@ def _jitter_pos(x: int, y: int, radius: int = 2) -> tuple[int, int]:
 def _center_mouse():
     """Move mouse to exact screen center and let it stabilize.
 
-    Called before EVERY GUI close and EVERY world right-click. This is the
-    single most important function for preventing camera drift — when Minecraft
-    recaptures the cursor at center, delta is zero and the camera stays put.
+    ONLY called inside buy_spawners() while the shop GUI is still open.
+    In a GUI, the cursor is free — moveTo just repositions it without
+    affecting the camera. When close_menu() then presses E, Minecraft
+    recaptures the cursor at center → zero delta → zero camera rotation.
+
+    NEVER call this when no GUI is open — in the game world, moveTo
+    generates mouse events that Minecraft interprets as camera rotation.
     """
     pyautogui.moveTo(_CENTER_X, _CENTER_Y)
     time.sleep(CAMERA_STABILIZE_MS / 1000)
@@ -64,9 +68,9 @@ def _center_mouse():
 def open_spawner_menu():
     """Type /spawners in chat to open the spawner purchase panel.
 
-    After the shop opens, Minecraft centers the cursor. We wait for the shop
-    to fully materialize and then recenter explicitly so our internal state
-    matches Minecraft's cursor position exactly.
+    When the shop opens, Minecraft centers the cursor automatically.
+    We never move the mouse here — the only mouse movement in the entire
+    cycle happens inside buy_spawners() while the GUI is open.
     """
     _pynput_kb.press(KEY_OPEN_CHAT)
     _pynput_kb.release(KEY_OPEN_CHAT)
@@ -80,21 +84,17 @@ def open_spawner_menu():
     _pynput_kb.press(Key.enter)
     _pynput_kb.release(Key.enter)
 
-    # Wait for shop GUI to open — server may be laggy
+    # Wait for shop GUI to fully open — server may be laggy
     _jitter_ms(SHOP_OPEN_DELAY_MS)
-
-    # Align our cursor with Minecraft's centered cursor inside the GUI.
-    # This eliminates any residual delta from the previous cycle.
-    _center_mouse()
 
 
 def close_menu():
     """Close any open GUI (inventory, shop, etc.).
 
-    Recenters mouse BEFORE pressing E so that when Minecraft recaptures the
-    cursor at exact center, delta is zero → zero camera rotation.
+    Mouse is already centered by buy_spawners() while the GUI was open.
+    Just press E — when Minecraft recaptures the cursor at center,
+    delta is zero → zero camera rotation.
     """
-    _center_mouse()
     _pynput_kb.press(KEY_CLOSE_MENU)
     _pynput_kb.release(KEY_CLOSE_MENU)
     _jitter_ms(ACTION_DELAY_MS)
@@ -196,13 +196,14 @@ _HOTBAR_KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 def place_all_hotbar():
     """Select slot 1, shift+right-click to merge all spawners, right-click to place.
 
-    Explicitly centers the mouse before every right-click. These right-clicks
-    happen in the game WORLD (no GUI), so cursor position maps to crosshair
-    direction. If the cursor is even 1px off-center, Minecraft rotates the
-    camera. Over hundreds of cycles, sub-pixel errors accumulate into visible
-    drift that breaks alignment with the placement block.
+    NEVER moves the mouse. When this function runs, NO GUI is open — the player
+    is looking at the world. Any pyautogui.moveTo() call here would generate
+    mouse-move events that Minecraft interprets as camera rotation, causing
+    drift that accumulates over cycles.
 
-    By centering aggressively, every right-click hits the exact same spot.
+    The cursor is already at center from buy_spawners()'s final centering
+    (which happened while the shop GUI was still open, so it was safe).
+    Right-clicks at the current position hit the exact same crosshair spot.
     """
     # Select slot 1
     _pynput_kb.press(_HOTBAR_KEYS[0])
@@ -210,7 +211,6 @@ def place_all_hotbar():
     _jitter_ms(PLACE_SLOT_DELAY_MS)
 
     # Shift + right-click: compacta todos os spawners do inventario no slot 1
-    _center_mouse()
     pyautogui.keyDown('shift')
     try:
         pyautogui.rightClick()
@@ -219,12 +219,8 @@ def place_all_hotbar():
     _jitter_ms(ACTION_DELAY_MS)
 
     # Right-click: coloca o spawner resultante no chao
-    _center_mouse()
     pyautogui.rightClick()
     _jitter_ms(ACTION_DELAY_MS)
-
-    # One final recenter so the NEXT cycle starts with a clean cursor position.
-    _center_mouse()
 
 
 # ---------------------------------------------------------------------------
@@ -254,4 +250,5 @@ def refill_hotbar_from_row(row_index: int, inventory_slots: list):
 
     # Centraliza o mouse ANTES de fechar o inventário (cursor ainda livre).
     # Evita que o Minecraft gire a câmera ao recapturar o cursor.
-    _center_mouse()
+    pyautogui.moveTo(_CENTER_X, _CENTER_Y)
+    _jitter_ms(MOUSE_MOVE_DELAY_MS)
