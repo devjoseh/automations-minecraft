@@ -1,7 +1,8 @@
 # Timing (milliseconds)
 Q_PRESS_INTERVAL_MS = 60      # Interval between each Q press (50–60ms)
-MOUSE_MOVE_DELAY_MS = 80      # Delay after moving mouse before acting
-ACTION_DELAY_MS = 100         # Delay between major actions (open menu, etc.)
+MOUSE_MOVE_DELAY_MS = 200      # Delay after moving mouse before acting
+ACTION_DELAY_MS = 150         # Delay between major actions (open menu, etc.)
+SHOP_OPEN_DELAY_MS = 700      # Wait after /spawners Enter for the GUI to fully open (accounts for server lag that grows over long sessions)
 
 # Inventory
 TOTAL_Q_PRESSES = 576         # 9 hotbar slots × 64 items each (merged into one before placing)

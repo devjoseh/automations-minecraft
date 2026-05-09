@@ -19,6 +19,7 @@ from config import (
     MOUSE_MOVE_DELAY_MS,
     PLACE_SLOT_DELAY_MS,
     Q_PRESS_INTERVAL_MS,
+    SHOP_OPEN_DELAY_MS,
     TOTAL_Q_PRESSES,
 )
 
@@ -60,7 +61,7 @@ def open_spawner_menu():
 
     _pynput_kb.press(Key.enter)
     _pynput_kb.release(Key.enter)
-    _jitter_ms(ACTION_DELAY_MS)
+    _jitter_ms(SHOP_OPEN_DELAY_MS)
 
 
 def close_menu():
@@ -93,6 +94,19 @@ def buy_spawners(spawner_pos: tuple, running=None):
     """
     pyautogui.moveTo(*_jitter_pos(*spawner_pos))
     _jitter_ms(MOUSE_MOVE_DELAY_MS)
+
+    # Guard: verify the cursor actually landed on the spawner slot.
+    # If the shop GUI opened *after* our moveTo call, Minecraft resets the cursor
+    # to the screen center — which is near the compass/multiplier button and would
+    # cause Q presses to interact with it instead of the spawner.
+    # A tolerance of 20px is enough to catch a center-reset (hundreds of px away)
+    # while being forgiving of the ±2px jitter in _jitter_pos.
+    cur_x, cur_y = pyautogui.position()
+    if abs(cur_x - spawner_pos[0]) > 20 or abs(cur_y - spawner_pos[1]) > 20:
+        print(f"[buy] Cursor desviou para ({cur_x},{cur_y}) — shop abriu após moveTo. Reposicionando...")
+        _jitter_ms(200)
+        pyautogui.moveTo(*_jitter_pos(*spawner_pos))
+        _jitter_ms(MOUSE_MOVE_DELAY_MS)
 
     base_interval = Q_PRESS_INTERVAL_MS / 1000
     jitter_range = base_interval * 0.20
