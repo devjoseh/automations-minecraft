@@ -2,7 +2,9 @@
 Q_PRESS_INTERVAL_MS = 60      # Interval between each Q press (50–60ms)
 MOUSE_MOVE_DELAY_MS = 200      # Delay after moving mouse before acting
 ACTION_DELAY_MS = 150         # Delay between major actions (open menu, etc.)
-SHOP_OPEN_DELAY_MS = 700      # Wait after /spawners Enter for the GUI to fully open (accounts for server lag that grows over long sessions)
+SHOP_OPEN_DELAY_MS = 1500     # Wait after /spawners Enter for the GUI to fully open (accounts for server lag that grows over long sessions)
+CAMERA_STABILIZE_MS = 80      # Pause after centering mouse to let Minecraft register the position
+POSITION_RECHECK_INTERVAL = 64  # Re-verify cursor position every N Q presses (one stack)
 
 # Inventory
 TOTAL_Q_PRESSES = 576         # 9 hotbar slots × 64 items each (merged into one before placing)
